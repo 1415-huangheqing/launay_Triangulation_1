@@ -7,6 +7,8 @@ import random as rand
 import time
 import numpy as np
 import pickle
+from functools import reduce
+
 
 from PIL import Image, ImageDraw, ImageFilter, ImageEnhance, ImageOps, ImageFile
 from delaunay import delaunay
@@ -21,24 +23,24 @@ def addFilenamePrefix( prefix, filename ):
 
 def generateRandomPoints(count, sizeX, sizeY):
     points = []
-    start = time.clock()
+    start = time.perf_counter()
     for i in range(count):
         p = (rand.randint(0,sizeX),rand.randint(0,sizeY))
         if not p in points:
             points.append(p)
-    print "Punkte generieren: %.2fs" % (time.clock()-start)
+    print ("Punkte generieren: %.2fs" % (time.perf_counter()-start))
     return points
 
 def generateWeightedRandomPoints(count, sizeX, sizeY):
     points = []
-    start = time.clock()
+    start = time.perf_counter()
     for i in range(count):
         x = rand.randint(0,sizeX/2)-rand.randint(0,sizeX/2) + sizeX/2
         y = rand.randint(0,sizeY/2)-rand.randint(0,sizeY/2) + sizeY/2
         p = (x, y)
         if not p in points:
             points.append(p)
-    print "Punkte generieren: %.2fs" % (time.clock()-start)
+    print ("Punkte generieren: %.2fs" % (time.perf_counter()-start))
     return points
 
 def drawPoints(points, filename, sizeX, sizeY):
@@ -53,7 +55,7 @@ def drawPoints(points, filename, sizeX, sizeY):
 def drawTriangulation(triangles, filename, sizeX, sizeY, multiplier):
     im = Image.new('RGB', (sizeX*multiplier, sizeY*multiplier))
     draw = ImageDraw.Draw(im)
-    start = time.clock()
+    start = time.perf_counter()
     for t in triangles:
         r = rand.randint(0,255)
         g = rand.randint(0,255)
@@ -64,7 +66,7 @@ def drawTriangulation(triangles, filename, sizeX, sizeY, multiplier):
         drawT = (p0, p1, p2)
         draw.polygon(drawT, fill=(r,g,b,255))
     im.save(filename, "JPEG")
-    print "Dreiecke zeichnen: %.2fs" % (time.clock()-start)
+    print("Dreiecke zeichnen: %.2fs" % (time.perf_counter()-start))
 
 def getCenterPoint(t):
     return ((t[0][0]+t[1][0]+t[2][0])/3, (t[0][1]+t[1][1]+t[2][1])/3)
@@ -128,7 +130,7 @@ def drawImageColoredTriangles(triangles, filename, origIm, multiplier):
     (sizeX, sizeY) = origIm.size
     im = Image.new('RGB', (sizeX*multiplier, sizeY*multiplier))
     draw = ImageDraw.Draw(im)
-    start = time.clock()
+    start = time.perf_counter()
     for t in triangles:
         (r,g,b) = getTriangleColor(t, origIm)
         p0 = tuple(map(lambda x:x*multiplier, t[0]))
@@ -142,7 +144,7 @@ def drawImageColoredTriangles(triangles, filename, origIm, multiplier):
     
 
 def drawImageColoredVoronoi(polygons, filename, origIm, multiplier):
-    start = time.clock()
+    start = time.perf_counter()
     (sizeX, sizeY) = origIm.size
     im = Image.new('RGB', (sizeX*multiplier, sizeY*multiplier))
     draw = ImageDraw.Draw(im)
@@ -150,17 +152,22 @@ def drawImageColoredVoronoi(polygons, filename, origIm, multiplier):
         if len(pol) < 2:
             continue
         (r,g,b) = getPolygonColor(pol, origIm)
-        newPol = map(lambda x: (x[0] * multiplier, x[1]*multiplier), pol)
-        draw.polygon(newPol, fill=(r,g,b,255))
+        # newPol = map(lambda x: (x[0] * multiplier, x[1]*multiplier), pol)
+        newPol = [(x[0] * multiplier, x[1] * multiplier) for x in pol]
+        # draw.polygon(newPol, fill=(r,g,b,255))
+        if isinstance(newPol, (list, tuple)) and all(isinstance(point, (list, tuple)) and len(point) == 2 for point in newPol):
+            draw.polygon(newPol, fill=(r, g, b))  # 使用 RGB 三元组
+        else:
+            print("newPol 不是有效的坐标序列，跳过绘制该多边形。")
     im = brightenImage(im, 3.0)
     ImageFile.MAXBLOCK = im.size[0] * im.size[1]
     im.save(filename, "JPEG", quality=100, optimize=True, progressive=True)
-    print "Voronoi zeichnen: %.2fs" % (time.clock()-start)
+    print ("Voronoi zeichnen: %.2fs" % (time.perf_counter()-start))
 
 def generateTriangles(points):
-    start = time.clock()
+    start = time.perf_counter()
     triangles = delaunay(points)
-    print "Delaunay-Triangulierung: %.2fs" % (time.clock()-start)
+    print ("Delaunay-Triangulierung: %.2fs" % (time.perf_counter()-start))
     return triangles
 
 # Der Faktor, der die Anzahl generierter Punkte bestimmt ist der Exponent von v.
@@ -170,7 +177,7 @@ def generateTriangles(points):
 # 2.0 ~ 3000 Punkte
 # 2.2 ~ 9500 Punkte
 def findPointsFromImage(im, factor):
-    start = time.clock()
+    start = time.perf_counter()
     pix = np.array(im)
     points = []
 
@@ -182,12 +189,13 @@ def findPointsFromImage(im, factor):
             if np.random.random() < v:
                 points.append((col, row))
 
-    print "Anzahl erzeugter Punkte:", len(points)
-    print "Punkte extrahieren: %.2fs" % (time.clock()-start)
+    print ("Anzahl erzeugter Punkte:", len(points))
+    print ("Punkte extrahieren: %.2fs" % (time.perf_counter()-start))
     return points
 
 def loadAndFilterImage(name):
-    start = time.clock()
+    # start = time.perf_counter()
+    start = time.perf_counter()
     orig = Image.open(name)
     im = orig.convert("L")
     im = im.filter(ImageFilter.GaussianBlur(radius=5))
@@ -196,7 +204,7 @@ def loadAndFilterImage(name):
     im = brightenImage(im, 20.0)
 
     im = im.filter(ImageFilter.GaussianBlur(radius=5))
-    print "Bild laden: %.2fs" % (time.clock()-start)
+    print ("Bild laden: %.2fs" % (time.perf_counter()-start))
     return (orig, im)
 
 def tupleToString(t):
@@ -205,8 +213,8 @@ def tupleToString(t):
 def printTriangleList(l):
     for t in l:
         if t != None:
-            print tupleToString(t),
-    print ""
+            print (tupleToString(t)),
+    print ("")
 
 def removeUnusedLinks(triangles):
     newList = []
@@ -234,18 +242,18 @@ def saveTriangleListToFile(triangles, filename):
         pickle.dump(triangles, f)
 
 def autocontrastImage(input_filename, output_filename):
-    start = time.clock()
+    start = time.perf_counter()
     im = Image.open(input_filename)
     im = ImageOps.autocontrast(im)
     im.save( addFilenamePrefix( "autocontrasted_", output_filename ), "JPEG" )
-    print "Autocontrast Image: %.2fs" % (time.clock()-start)
+    print ("Autocontrast Image: %.2fs" % (time.perf_counter()-start))
 
 def equalizeImage(filename):
-    start = time.clock()
+    start = time.perf_counter()
     im = Image.open(filename)
     im = ImageOps.equalize(im)
     im.save( addFilenamePrefix( "equalized_", filename ), "JPEG" )
-    print "Equalize Image: %.2fs" % (time.clock()-start)
+    print ("Equalize Image: %.2fs" % (time.perf_counter()-start))
 
 def resizeImage(filename, longestSide, outDirectory="."):
     im = Image.open(filename)
@@ -260,16 +268,16 @@ def resizeImage(filename, longestSide, outDirectory="."):
 
 # Wrapper.
 def delaunayFromPoints(points):
-    start = time.clock()
+    start = time.perf_counter()
     triangles = delaunay(points)
-    print "Delaunay-Triangulierung: %.2fs" % (time.clock()-start)
+    print ("Delaunay-Triangulierung: %.2fs" % (time.perf_counter()-start))
     return triangles
 
 # Wrapper.
 def voronoiFromTriangles(triangles):
-    start = time.clock()
+    start = time.perf_counter()
     polygons = createVoronoiFromDelaunay(triangles)
-    print "Voronoi-Polygonalisierung: %.2fs" % (time.clock()-start)
+    print ("Voronoi-Polygonalisierung: %.2fs" % (time.perf_counter()-start))
     return polygons
 
 if __name__ == '__main__':
@@ -287,7 +295,7 @@ if __name__ == '__main__':
     options = parser.parse_args()
 
     if(not os.path.isfile(options.input_filename)):
-        print "There was an error in the path of the indicated file. Please check and try again!"
+        print ("There was an error in the path of the indicated file. Please check and try again!")
     else:
         (colorIm, blackIm) = loadAndFilterImage(options.input_filename)
         (width, height) = colorIm.size

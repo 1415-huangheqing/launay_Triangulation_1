@@ -61,13 +61,13 @@ def tupleToString(t):
 def printTriangleList(l):
     for t in l:
         if t != None:
-            print tupleToString(t),
-    print ""
+            print (tupleToString(t)),
+    print ("")
 
 def printT(t):
-    print tupleToString(t),
+    print (upleToString(t)),
 def printTNewline(t):
-    print tupleToString(t)
+    print (tupleToString(t))
 
 def getNextTriangle(p, t, lastT):
     tmpP = p[:2]

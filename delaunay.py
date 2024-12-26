@@ -53,7 +53,7 @@ def getOuterPoint(nextT, thisT):
     for i in range(3):
         if nextT[i] != thisT[0] and nextT[i] != thisT[1] and nextT[i] != thisT[2]:
             return nextT[i]
-    print "not happening..."
+    print ("not happening...")
 
 def debugDrawPath(triangles, startT, p):
     im = Image.new('RGB', (2000, 2000))
@@ -69,8 +69,8 @@ def debugDrawPath(triangles, startT, p):
 
     tmpP = (int((startT[0][0]+startT[1][0]+startT[2][0])/3.0),
             int((startT[0][1]+startT[1][1]+startT[2][1])/3.0))
-    print "Tuple:","(",startT[0],startT[1],startT[2],")"
-    print tmpP
+    print ("Tuple:","(",startT[0],startT[1],startT[2],")")
+    print (tmpP)
     draw.arc((p[0], p[1], p[0]+20,p[1]+20),0,360,fill='red')
     draw.arc((tmpP[0], tmpP[1], tmpP[0]+20,tmpP[1]+20),0,360,fill='green')
 
@@ -93,10 +93,10 @@ def tupleToString(t):
 def printTriangleList(l):
     for t in l:
         if t != None:
-            print tupleToString(t),
+            print (tupleToString(t)),
         else:
-            print "None",
-    print ""
+            print ("None"),
+    print ("")
 
 def isEmpty(t):
     return t == None or (t[0] == None and t[1] == None and t[2] == None)
@@ -114,8 +114,8 @@ def findTriangle2Rec(p, t, lastT, debug):
             #print count,
             return t
 
-        d1 = sys.maxint
-        d2 = sys.maxint
+        d1 = float('inf')
+        d2 = float('inf')
 
         # Welches anliegende Dreieck ist näher an p:
         t1 = t[3]
@@ -141,7 +141,7 @@ def findTriangle2Rec(p, t, lastT, debug):
             visited.append(t)
 
         if nextT1 == None and nextT2 == None:
-            print "shit."
+            print ("shit.")
 
         # Wenn einer von beiden None ist und der andere nicht.
         if nextT1 == None and nextT2 != None:
@@ -354,7 +354,7 @@ def findNextTriangleWithPoint(point, t):
     for i in range(3, 6):
         if t != None and t[i] != None and pointInTriangle4(point, t[i]):
             return t[i]
-    print "shit fuck"
+    print ("shit fuck")
 
 
 # Fuegt einen Punkt in eine bestehende Triangulierung ein und
@@ -479,7 +479,7 @@ def removeOutOfBoundsTriangles(triangles, minX, minY, maxX, maxY):
     newTriangles = []
     good = 0
     bad = 0
-    start = time.clock()
+    start = time.perf_counter()
     for t in triangles:
         if triangleInRange(t, minX, minY, maxX, maxY):
             newT = [t[0],t[1],t[2], t[3], t[4], t[5]]
@@ -490,8 +490,8 @@ def removeOutOfBoundsTriangles(triangles, minX, minY, maxX, maxY):
             good += 1
         else:
             bad += 1
-    print "Bad-Triangles entfernen: %.2fs" % (time.clock()-start)
-    print "Good triangles:", good, " and bad triangles:", bad
+    print ("Bad-Triangles entfernen: %.2fs" % (time.perf_counter()-start))
+    print ("Good triangles:", good, " and bad triangles:", bad)
     return newTriangles
 
 # Erstellt eine Delaunay-Triangulierung der uebergebenen Punkte!
